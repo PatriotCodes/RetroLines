@@ -21,25 +21,36 @@ using UnityEngine.UI;
 
 public class Game : MonoBehaviour {
 
+	public struct AddedBalls {  // structure for storing tile coordinates
+		public int x;		  // goes from bottom left conner
+		public int y;
+		public int ballIndex;
+	};
+
 	public Transform canvas;
 	public SetField setField;
 	public RawImage[] balls = new RawImage[7];
 	private bool userMove;
 	private int[] upcomingBalls = new int[3];
+	private SetField.gridTile[] upcomingCoord = new SetField.gridTile[3];
 	private int ballSize = (Screen.width / 9);
+	private List<AddedBalls> addedBalls = new List<AddedBalls>();
 
 	void Start () {
 		userMove = false;
+		SetUpcomingBalls();
+		AddBalls();
 	}
 
 	void Update () {
 		if (!userMove) {
 			SetUpcomingBalls();
+			AddUpcomingBalls();
 			userMove = true;
 		}
 	}
 
-	private void SetUpcomingBalls() {
+	private void SetUpcomingBalls() {  // getting which balls will be added
 		for (int i = 0; i < 3; i++) {
 			int randInt = Random.Range(0, 6);
 			upcomingBalls[i] = randInt;
@@ -50,12 +61,59 @@ public class Game : MonoBehaviour {
 		}
 	}
 
-	private void AddBalls() {
+	private void AddUpcomingBalls() {  // adding small presentations of upcoming balls
+		GetUpcomingCoord();
 		for (int i = 0; i < 3; i++) {
 			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			ball.rectTransform.anchoredPosition3D = new Vector3(setField.gridPos[i,i].x, setField.gridPos[i,i].y, 1);
+			ball.rectTransform.anchoredPosition3D = new Vector3(setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].x, setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].y, 1);
+			ball.rectTransform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
+			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
+		}
+	}
+
+	private void AddBalls() {  // adding balls to the field
+		GetUpcomingCoord();
+		for (int i = 0; i < 3; i++) {
+			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
+			ball.rectTransform.anchoredPosition3D = new Vector3(setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].x, setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].y, 1);
 			ball.rectTransform.localScale = new Vector3(1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
 		}
 	}
+
+	private void GetUpcomingCoord() {  // getting coordinates to which balls will be added
+		bool presentedCoord;
+		int xCoord;
+		int yCoord;
+		for (int i = 0; i < 3; i++) {
+			do {
+				presentedCoord = false;
+				xCoord = Random.Range (0, 9);
+				foreach (AddedBalls ball in addedBalls) {
+					if (ball.x == xCoord) {
+						presentedCoord = true;
+						break;
+					}
+				}
+			} while (presentedCoord);
+			upcomingCoord[i].x = xCoord;
+			do {
+				presentedCoord = false;
+				yCoord = Random.Range (0, 9);
+				foreach (AddedBalls ball in addedBalls) {
+					if (ball.x == xCoord) {
+						presentedCoord = true;
+						break;
+					}
+				}
+			} while (presentedCoord);
+			upcomingCoord[i].y = yCoord;
+			AddedBalls aBall = new AddedBalls();
+			aBall.x = xCoord;
+			aBall.y = yCoord;
+			aBall.ballIndex = upcomingBalls[i];
+			addedBalls.Add(aBall);
+		}
+	}
+
 }
