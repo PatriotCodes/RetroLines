@@ -28,13 +28,16 @@ public class SetField : MonoBehaviour {
 
 	public const int gridWidth = 9;
 	public const int gridHeigth = 9;
+	public gridTile[] upcomingBallsCoord = new gridTile[3];
 	public gridTile[,] gridPos = new gridTile[gridWidth,gridHeigth];  // coodrinates of the centers of tiles
 	public RawImage tileSprite;
 	public Transform canvas;
+	public int centerWidth = ((Screen.width / 9) / 2);
 
-	void Start () {
+	void Awake() {
 		setGridPositions();
 		instantiateTiles();
+		getUpcomingCoord();
 	}
 
 	// ... ... ...
@@ -42,7 +45,6 @@ public class SetField : MonoBehaviour {
 	// 1,0 1,1 ...
 	// 0,0 0,1 ...
 	private void setGridPositions() {
-		int centerWidth = ((Screen.width / 9) / 2);
 		int yOff = (Screen.height - Screen.width) / 2 + centerWidth;
 		for (int i = 0; i < gridWidth; i++) {
 			int xOff = centerWidth;
@@ -56,7 +58,6 @@ public class SetField : MonoBehaviour {
 	}
 
 	private void instantiateTiles() {
-		int centerWidth = ((Screen.width / 9) / 2);
 		for (int i = 0; i < gridWidth; i++) {
 			for (int j = 0; j < gridHeigth; j++) {
 				RawImage tile = Instantiate(tileSprite, canvas.transform) as RawImage;
@@ -65,5 +66,17 @@ public class SetField : MonoBehaviour {
 				tile.rectTransform.sizeDelta = new Vector2(centerWidth * 2, centerWidth * 2);
 			}
 		}
+	}
+
+	private void getUpcomingCoord() {
+		int centerX = (Screen.width / 2);
+		int tileSize = (Screen.width / 9);
+		int centerY = Screen.height - (tileSize / 2);
+		upcomingBallsCoord [0].x = (centerX - tileSize);
+		upcomingBallsCoord [0].y = centerY;
+		upcomingBallsCoord [1].x = centerX;
+		upcomingBallsCoord [1].y = centerY;
+		upcomingBallsCoord [2].x = (centerX + tileSize);
+		upcomingBallsCoord [2].y = centerY;
 	}
 }
