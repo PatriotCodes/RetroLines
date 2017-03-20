@@ -21,10 +21,26 @@ using UnityEngine.UI;
 
 public class Game : MonoBehaviour {
 
-	public struct AddedBalls {  // structure for storing tile coordinates
+	public struct AddedBall {  // structure for storing tile coordinates
 		public int x;		  // goes from bottom left conner
 		public int y;
 		public int ballIndex;
+
+		public AddedBall(int x, int y, int ballIndex) {
+			this.x = x;
+			this.y = y;
+			this.ballIndex = ballIndex;
+		}
+	};
+
+	public struct Tile {  // structure for storing tile coordinates
+		public int x;		  // goes from bottom left conner
+		public int y;
+
+		public Tile(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
 	};
 
 	public Transform canvas;
@@ -34,15 +50,22 @@ public class Game : MonoBehaviour {
 	private int[] upcomingBalls = new int[3];
 	private SetField.gridTile[] upcomingCoord = new SetField.gridTile[3];
 	private int ballSize = (Screen.width / 9);
-	private List<AddedBalls> addedBalls = new List<AddedBalls>();
+	private List<AddedBall> addedBalls = new List<AddedBall>();
+	private List<Tile> freeTiles = new List<Tile>();
+	public const int gridWidth = 9;
+	public const int gridHeigth = 9;
 
-	void Start () {
+	void Awake() {
+		InstantiateFreeTiles();
+	}
+
+	void Start() {
 		userMove = false;
 		SetUpcomingBalls();
 		AddBalls();
 	}
 
-	void Update () {
+	void Update() {
 		if (!userMove) {
 			SetUpcomingBalls();
 			AddUpcomingBalls();
@@ -82,37 +105,20 @@ public class Game : MonoBehaviour {
 	}
 
 	private void GetUpcomingCoord() {  // getting coordinates to which balls will be added
-		bool presentedCoord;
-		int xCoord;
-		int yCoord;
 		for (int i = 0; i < 3; i++) {
-			do {
-				presentedCoord = false;
-				xCoord = Random.Range (0, 9);
-				foreach (AddedBalls ball in addedBalls) {
-					if (ball.x == xCoord) {
-						presentedCoord = true;
-						break;
-					}
-				}
-			} while (presentedCoord);
-			upcomingCoord[i].x = xCoord;
-			do {
-				presentedCoord = false;
-				yCoord = Random.Range (0, 9);
-				foreach (AddedBalls ball in addedBalls) {
-					if (ball.x == xCoord) {
-						presentedCoord = true;
-						break;
-					}
-				}
-			} while (presentedCoord);
-			upcomingCoord[i].y = yCoord;
-			AddedBalls aBall = new AddedBalls();
-			aBall.x = xCoord;
-			aBall.y = yCoord;
-			aBall.ballIndex = upcomingBalls[i];
-			addedBalls.Add(aBall);
+			int randIndex = Random.Range (0, freeTiles.Count); 
+			addedBalls.Add (new AddedBall (freeTiles[randIndex].x, freeTiles[randIndex].y, upcomingBalls[i]));
+			upcomingCoord[i].x = freeTiles[randIndex].x;
+			upcomingCoord[i].y = freeTiles[randIndex].y;
+			freeTiles.RemoveAt(randIndex);
+		}
+	}
+
+	private void InstantiateFreeTiles() {
+		for (int i = 0; i < gridWidth; i++) {
+			for (int j = 0; j < gridHeigth; j++) {
+				freeTiles.Add(new Tile (i, j));
+			}
 		}
 	}
 
