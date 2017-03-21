@@ -44,6 +44,10 @@ public class Game : MonoBehaviour {
 	};
 
 	public Transform canvas;
+	private RectTransform ballTransform;
+	private RectTransform prevBall;
+	private Vector2 startupPosition;
+	private bool firstClick;
 	public SetField setField;
 	public RawImage[] balls = new RawImage[7];
 	private bool userMove;
@@ -54,6 +58,7 @@ public class Game : MonoBehaviour {
 	private List<Tile> freeTiles = new List<Tile>();
 	public const int gridWidth = 9;
 	public const int gridHeigth = 9;
+	private IEnumerator coroutine;
 
 	void Awake() {
 		InstantiateFreeTiles();
@@ -70,6 +75,21 @@ public class Game : MonoBehaviour {
 			SetUpcomingBalls();
 			AddUpcomingBalls();
 			userMove = true;
+		}
+		if ( Input.GetMouseButtonDown(0)) {
+			Vector2 worldPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			RaycastHit2D hit = Physics2D.Raycast(worldPoint, Vector2.zero);
+			if ( hit.collider != null ) {
+				if (coroutine != null) {
+					StopCoroutine(coroutine);
+					prevBall.anchoredPosition = startupPosition;
+				}
+				ballTransform = hit.collider.gameObject.transform as RectTransform;
+				prevBall = ballTransform;
+				startupPosition = ballTransform.anchoredPosition;
+				coroutine = BallAnimation(0.35f, ballTransform);
+				StartCoroutine(coroutine);
+			}
 		}
 	}
 
@@ -101,6 +121,8 @@ public class Game : MonoBehaviour {
 			ball.rectTransform.anchoredPosition3D = new Vector3(setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].x, setField.gridPos[upcomingCoord[i].x,upcomingCoord[i].y].y, 1);
 			ball.rectTransform.localScale = new Vector3(1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
+			BoxCollider2D ballCollider = ball.GetComponent(typeof(BoxCollider2D)) as BoxCollider2D;
+			ballCollider.size = new Vector2(ballSize, ballSize);
 		}
 	}
 
@@ -121,5 +143,13 @@ public class Game : MonoBehaviour {
 			}
 		}
 	}
-
+		
+	private IEnumerator BallAnimation(float waitTime, RectTransform transform) {
+		while (true) {
+			transform.anchoredPosition = new Vector2(transform.anchoredPosition.x, transform.anchoredPosition.y + (Screen.height / 80));
+			yield return new WaitForSeconds(waitTime);
+			transform.anchoredPosition = new Vector2(transform.anchoredPosition.x, transform.anchoredPosition.y - (Screen.height / 80));
+			yield return new WaitForSeconds(waitTime);
+		}
+	}
 }

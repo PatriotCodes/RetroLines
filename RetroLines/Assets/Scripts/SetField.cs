@@ -35,16 +35,16 @@ public class SetField : MonoBehaviour {
 	public int centerWidth = ((Screen.width / 9) / 2);
 
 	void Awake() {
-		setGridPositions();
-		instantiateTiles();
-		getUpcomingCoord();
+		SetGridPositions();
+		InstantiateTiles();
+		GetUpcomingCoord();
 	}
 
 	// ... ... ...
 	// 2,0 2,1 ...
 	// 1,0 1,1 ...
 	// 0,0 0,1 ...
-	private void setGridPositions() {
+	private void SetGridPositions() {
 		int yOff = (Screen.height - Screen.width) / 2 + centerWidth;
 		for (int i = 0; i < gridWidth; i++) {
 			int xOff = centerWidth;
@@ -57,7 +57,7 @@ public class SetField : MonoBehaviour {
 		}
 	}
 
-	private void instantiateTiles() {
+	private void InstantiateTiles() {
 		for (int i = 0; i < gridWidth; i++) {
 			for (int j = 0; j < gridHeigth; j++) {
 				RawImage tile = Instantiate(tileSprite, canvas.transform) as RawImage;
@@ -68,7 +68,7 @@ public class SetField : MonoBehaviour {
 		}
 	}
 
-	private void getUpcomingCoord() {
+	private void GetUpcomingCoord() {
 		int centerX = (Screen.width / 2);
 		int tileSize = (Screen.width / 9);
 		int centerY = Screen.height - (tileSize / 2);
