@@ -64,6 +64,8 @@ public class SetField : MonoBehaviour {
 				tile.rectTransform.anchoredPosition3D = new Vector3(gridPos [i, j].x, gridPos [i, j].y, 0);
 				tile.rectTransform.localScale = new Vector3(1, 1, 1);
 				tile.rectTransform.sizeDelta = new Vector2(centerWidth * 2, centerWidth * 2);
+				BoxCollider2D tileCollider = tile.GetComponent(typeof(BoxCollider2D)) as BoxCollider2D;
+				tileCollider.size = new Vector2(centerWidth * 2,centerWidth * 2);
 			}
 		}
 	}

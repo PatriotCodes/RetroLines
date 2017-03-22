@@ -1,6 +1,6 @@
 fileFormatVersion: 2
-guid: c720b1e24c04d884d8a09595d01adfa5
-timeCreated: 1489173387
+guid: 2d55a232c6c4a4e42a6c4dfa3b459b1d
+timeCreated: 1490185756
 licenseType: Free
 TrueTypeFontImporter:
   serializedVersion: 4
@@ -9,9 +9,9 @@ TrueTypeFontImporter:
   characterSpacing: 0
   characterPadding: 1
   includeFontData: 1
-  fontName: Digital-7
+  fontName: VCR OSD Mono
   fontNames:
-  - Digital-7
+  - VCR OSD Mono
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 1

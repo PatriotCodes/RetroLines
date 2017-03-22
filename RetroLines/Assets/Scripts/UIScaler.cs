@@ -23,12 +23,13 @@ public class UIScaler : MonoBehaviour {
 
 	public Text ScoreText;
 	public Text BallsText;
-	private const int offsetDivider = 10;
-	private const float offsetMultiplier = 1.6f;
 	private const int minScreenWidth = 240;
+	private int offsetYDivider = 90;
+	private int offsetXDivider = 120;
 
 	void Start () {
 		SetScale();
+		SetOffset();
 		ScoreText.text = "00000";
 		BallsText.text = "00000";
 	}
@@ -36,7 +37,11 @@ public class UIScaler : MonoBehaviour {
 	private void SetScale() {
 		float scaleMultiplier = (float)Screen.width / (float)minScreenWidth;
 		ScoreText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
-		BallsText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
-		BallsText.rectTransform.anchoredPosition = new Vector2(-(Screen.width / 4),0);
+		BallsText.rectTransform.localScale = new Vector2(-scaleMultiplier, scaleMultiplier);
+	}
+
+	private void SetOffset() {
+		ScoreText.rectTransform.anchoredPosition = new Vector2((Screen.height / offsetXDivider), -(Screen.height / offsetYDivider));
+		BallsText.rectTransform.anchoredPosition = new Vector2(-(Screen.height / offsetXDivider), -(Screen.height / offsetYDivider));
 	}
 }
