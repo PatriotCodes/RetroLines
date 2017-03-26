@@ -56,10 +56,11 @@ public class Game : MonoBehaviour {
 	public RawImage[] balls = new RawImage[7];
 	private bool userMove;
 	private int[] upcomingBalls = new int[3];
-	private int[] upcomingCoords = new int[3];
 	private int ballSize = (Screen.width / 9);
-	private List<AddedBall> addedBalls = new List<AddedBall>();
 	private List<Tile> freeTiles = new List<Tile>();
+	private List<Tile> allTiles = new List<Tile>();
+	private Tile[] upcomingTiles = new Tile[3];
+	private RawImage[] upcomingObjects = new RawImage[3];
 	public const int gridWidth = 9;
 	public const int gridHeigth = 9;
 	private IEnumerator coroutine;
@@ -100,15 +101,13 @@ public class Game : MonoBehaviour {
 					if (prevBall != null) {
 						RectTransform tileTransform = hit [0].collider.gameObject.transform as RectTransform;
 						if (IsTileFree(tileTransform)) {
-								StopCoroutine (coroutine);
-								prevBall.anchoredPosition = startupPosition;
-								coroutine = null;
-								prevBall.anchoredPosition = tileTransform.anchoredPosition;
-								// TODO: Remove Free Tile and add Free Tile
-								// TODO: FindPath
-								AddBalls();
-								SetUpcomingBalls();
-								AddUpcomingBalls();
+							StopCoroutine (coroutine);
+							coroutine = null;
+							MoveBall(tileTransform);
+							// TODO: FindPath
+							AddBalls();
+							SetUpcomingBalls();
+							AddUpcomingBalls();
 						}
 					}
 				}
@@ -116,7 +115,7 @@ public class Game : MonoBehaviour {
 		}
 	}
 
-	private void SetUpcomingBalls() {  // getting which balls will be added
+	private void SetUpcomingBalls() {  // getting which balls will be added (what colour)
 		for (int i = 0; i < 3; i++) {
 			int randInt = Random.Range(0, 6);
 			upcomingBalls[i] = randInt;
@@ -130,11 +129,11 @@ public class Game : MonoBehaviour {
 	private void AddUpcomingBalls() {  // adding small presentations of upcoming balls
 		GetUpcomingCoord();
 		for (int i = 0; i < 3; i++) {
-			// TODO: Check if tile is free
 			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			ball.rectTransform.anchoredPosition3D = new Vector3(freeTiles[upcomingCoords[i]].x, freeTiles[upcomingCoords[i]].y, 1);
+			ball.rectTransform.anchoredPosition3D = new Vector3(upcomingTiles[i].x, upcomingTiles[i].y, 1);
 			ball.rectTransform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
 			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
+			upcomingObjects[i] = ball;
 		}
 	}
 
@@ -142,23 +141,21 @@ public class Game : MonoBehaviour {
 		for (int i = 0; i < 3; i++) {
 			// TODO: check if tile is not free and then choose another tile
 			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			ball.rectTransform.anchoredPosition3D = new Vector3(freeTiles[upcomingCoords[i]].x, freeTiles[upcomingCoords[i]].y, 1);
+			ball.rectTransform.anchoredPosition3D = new Vector3(upcomingTiles[i].x, upcomingTiles[i].y, 1);
 			ball.rectTransform.localScale = new Vector3(1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
 			ball.tag = ballTag;
 			BoxCollider2D ballCollider = ball.GetComponent(typeof(BoxCollider2D)) as BoxCollider2D;
 			ballCollider.size = new Vector2(ballSize, ballSize);
-		} // TODO: remove small presentations of upcoming balls
-		for (int i = 0; i > 3; i++) {
-			freeTiles.RemoveAt(upcomingCoords[i]);
+			Destroy(upcomingObjects[i]);
 		}
 	}
 
 	private void GetUpcomingCoord() {  // getting coordinates to which balls will be added
 		for (int i = 0; i < 3; i++) {
-			int randIndex = Random.Range (0, freeTiles.Count); 
-			addedBalls.Add (new AddedBall (freeTiles[randIndex].x, freeTiles[randIndex].y, upcomingBalls[i]));
-			upcomingCoords[i] = randIndex;
+			int randIndex = Random.Range (0, freeTiles.Count);
+			upcomingTiles[i] = freeTiles[randIndex];
+			freeTiles.RemoveAt(randIndex);
 		}
 	}
 
@@ -166,11 +163,12 @@ public class Game : MonoBehaviour {
 		for (int i = 0; i < gridWidth; i++) {
 			for (int j = 0; j < gridHeigth; j++) {
 				freeTiles.Add(new Tile (i, j, setField.gridPos[i,j].x, setField.gridPos[i,j].y));
+				allTiles.Add(new Tile (i, j, setField.gridPos [i, j].x, setField.gridPos [i, j].y));
 			}
 		}
 	}
 
-	private IEnumerator BallAnimation(float waitTime, RectTransform transform) {
+	private IEnumerator BallAnimation(float waitTime, RectTransform transform) { // TODO: Jumping ball z = 2
 		while (true) {
 			transform.anchoredPosition = new Vector2(transform.anchoredPosition.x, transform.anchoredPosition.y + (Screen.height / 80));
 			yield return new WaitForSeconds(waitTime);
@@ -182,4 +180,21 @@ public class Game : MonoBehaviour {
 	private bool IsTileFree(RectTransform transform) { // TODO: Implement
 		return true;
 	}
+
+	private void MoveBall(RectTransform finalPosition) {
+		prevBall.anchoredPosition = startupPosition;
+		prevBall.anchoredPosition = finalPosition.anchoredPosition;
+		freeTiles.Add(GetIJTile((int)startupPosition.x, (int)startupPosition.y));
+		freeTiles.Remove(GetIJTile((int)finalPosition.anchoredPosition.x, (int)finalPosition.anchoredPosition.y));
+	}
+
+	private Tile GetIJTile(int x, int y) {
+		for (int i = 0; i < allTiles.Count; i++) {
+			if (allTiles[i].x == x && allTiles[i].y == y) {
+				return allTiles[i];
+			}
+		}
+		return new Tile();
+	}
+
 }
