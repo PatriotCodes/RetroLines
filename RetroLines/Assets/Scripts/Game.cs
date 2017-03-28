@@ -66,6 +66,8 @@ public class Game : MonoBehaviour {
 	private IEnumerator coroutine;
 	private string ballTag = "Ball";
 	private string tileTag = "Tile";
+	public Text totalBallsText;
+	private int totalBalls = 0;
 
 	void Awake() {
 		InstantiateFreeTiles();
@@ -101,13 +103,15 @@ public class Game : MonoBehaviour {
 					if (prevBall != null) {
 						RectTransform tileTransform = hit [0].collider.gameObject.transform as RectTransform;
 						if (IsTileFree(tileTransform)) {
-							StopCoroutine (coroutine);
-							coroutine = null;
-							MoveBall(tileTransform);
-							// TODO: FindPath
-							AddBalls();
-							SetUpcomingBalls();
-							AddUpcomingBalls();
+							if (coroutine != null) {
+								StopCoroutine (coroutine);
+								coroutine = null;
+								MoveBall (tileTransform);
+								// TODO: FindPath
+								AddBalls ();
+								SetUpcomingBalls ();
+								AddUpcomingBalls ();
+							}
 						}
 					}
 				}
@@ -139,16 +143,18 @@ public class Game : MonoBehaviour {
 
 	private void AddBalls() {  // adding balls to the field
 		for (int i = 0; i < 3; i++) {
-			// TODO: check if tile is not free and then choose another tile
 			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			ball.rectTransform.anchoredPosition3D = new Vector3(upcomingTiles[i].x, upcomingTiles[i].y, 1);
-			ball.rectTransform.localScale = new Vector3(1, 1, 1);
-			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
+			// TODO: check if tile is not free and then choose another tile
+			ball.rectTransform.anchoredPosition3D = new Vector3 (upcomingTiles [i].x, upcomingTiles [i].y, 1);
+			ball.rectTransform.localScale = new Vector3 (1, 1, 1);
+			ball.rectTransform.sizeDelta = new Vector2 (ballSize, ballSize);
 			ball.tag = ballTag;
-			BoxCollider2D ballCollider = ball.GetComponent(typeof(BoxCollider2D)) as BoxCollider2D;
-			ballCollider.size = new Vector2(ballSize, ballSize);
-			Destroy(upcomingObjects[i]);
+			BoxCollider2D ballCollider = ball.GetComponent (typeof(BoxCollider2D)) as BoxCollider2D;
+			ballCollider.size = new Vector2 (ballSize, ballSize);
+			Destroy(upcomingObjects [i]);
+			totalBalls++;
 		}
+		totalBallsText.text = TotalBallsString();
 	}
 
 	private void GetUpcomingCoord() {  // getting coordinates to which balls will be added
@@ -197,4 +203,15 @@ public class Game : MonoBehaviour {
 		return new Tile();
 	}
 
+	private string TotalBallsString() {
+		if (totalBalls >= 10) {
+			return "000" + totalBalls.ToString();
+		} else if (totalBalls >= 100) {
+			return "00" + totalBalls.ToString();
+		} else if (totalBalls >= 1000) {
+			return "0" + totalBalls.ToString();
+		} else {
+			return "0000" + totalBalls.ToString();
+		}
+	}
 }

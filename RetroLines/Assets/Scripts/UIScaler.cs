@@ -37,11 +37,11 @@ public class UIScaler : MonoBehaviour {
 	private void SetScale() {
 		float scaleMultiplier = (float)Screen.width / (float)minScreenWidth;
 		ScoreText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
-		BallsText.rectTransform.localScale = new Vector2(-scaleMultiplier, scaleMultiplier);
+		BallsText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
 	}
 
 	private void SetOffset() {
 		ScoreText.rectTransform.anchoredPosition = new Vector2((Screen.height / offsetXDivider), -(Screen.height / offsetYDivider));
-		BallsText.rectTransform.anchoredPosition = new Vector2(-(Screen.height / offsetXDivider), -(Screen.height / offsetYDivider));
+		BallsText.rectTransform.anchoredPosition = new Vector2(-(Screen.height / offsetXDivider) - (BallsText.rectTransform.sizeDelta.x * BallsText.rectTransform.localScale.x), -(Screen.height / offsetYDivider));
 	}
 }
