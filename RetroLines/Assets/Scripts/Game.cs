@@ -21,12 +21,12 @@ using UnityEngine.UI;
 
 public class Game : MonoBehaviour {
 
-	public struct AddedBall {  // structure for storing tile coordinates
-		public int x;		  // goes from bottom left conner
+	public struct Ball {
+		public int x;
 		public int y;
 		public int ballIndex;
 
-		public AddedBall(int x, int y, int ballIndex) {
+		public Ball(int x, int y, int ballIndex) {
 			this.x = x;
 			this.y = y;
 			this.ballIndex = ballIndex;
@@ -59,8 +59,10 @@ public class Game : MonoBehaviour {
 	private int ballSize = (Screen.width / 9);
 	private List<Tile> freeTiles = new List<Tile>();
 	private List<Tile> allTiles = new List<Tile>();
+	private Tile moveTile = new Tile();  // tile to which we move our ball during the turn
 	private Tile[] upcomingTiles = new Tile[3];
 	private RawImage[] upcomingObjects = new RawImage[3];
+	private List<Ball> addedBalls = new List<Ball>();
 	public const int gridWidth = 9;
 	public const int gridHeigth = 9;
 	private IEnumerator coroutine;
@@ -111,6 +113,7 @@ public class Game : MonoBehaviour {
 								AddBalls ();
 								SetUpcomingBalls ();
 								AddUpcomingBalls ();
+								FindLineAndRemove ();
 							}
 						}
 					}
@@ -143,15 +146,19 @@ public class Game : MonoBehaviour {
 
 	private void AddBalls() {  // adding balls to the field
 		for (int i = 0; i < 3; i++) {
-			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			// TODO: check if tile is not free and then choose another tile
-			ball.rectTransform.anchoredPosition3D = new Vector3 (upcomingTiles [i].x, upcomingTiles [i].y, 1);
+			RawImage ball = Instantiate (balls [upcomingBalls [i]], canvas.transform) as RawImage;
+			if (!upcomingTiles[i].Equals(moveTile)) {
+				ball.rectTransform.anchoredPosition3D = new Vector3 (upcomingTiles [i].x, upcomingTiles [i].y, 1);
+			} else {
+				Tile newTile = GetFreeTile();
+				ball.rectTransform.anchoredPosition3D = new Vector3 (newTile.x, newTile.y, 1);
+			}
 			ball.rectTransform.localScale = new Vector3 (1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2 (ballSize, ballSize);
 			ball.tag = ballTag;
 			BoxCollider2D ballCollider = ball.GetComponent (typeof(BoxCollider2D)) as BoxCollider2D;
 			ballCollider.size = new Vector2 (ballSize, ballSize);
-			Destroy(upcomingObjects [i]);
+			Destroy (upcomingObjects[i]);
 			totalBalls++;
 		}
 		totalBallsText.text = TotalBallsString();
@@ -163,6 +170,13 @@ public class Game : MonoBehaviour {
 			upcomingTiles[i] = freeTiles[randIndex];
 			freeTiles.RemoveAt(randIndex);
 		}
+	}
+
+	private Tile GetFreeTile() {
+		int randIndex = Random.Range (0, freeTiles.Count);
+		Tile res = freeTiles[randIndex];
+		freeTiles.RemoveAt(randIndex);
+		return res;
 	}
 
 	private void InstantiateFreeTiles() {
@@ -191,7 +205,8 @@ public class Game : MonoBehaviour {
 		prevBall.anchoredPosition = startupPosition;
 		prevBall.anchoredPosition = finalPosition.anchoredPosition;
 		freeTiles.Add(GetIJTile((int)startupPosition.x, (int)startupPosition.y));
-		freeTiles.Remove(GetIJTile((int)finalPosition.anchoredPosition.x, (int)finalPosition.anchoredPosition.y));
+		moveTile = GetIJTile((int)finalPosition.anchoredPosition.x, (int)finalPosition.anchoredPosition.y);
+		freeTiles.Remove(moveTile);
 	}
 
 	private Tile GetIJTile(int x, int y) {
@@ -213,5 +228,8 @@ public class Game : MonoBehaviour {
 		} else {
 			return "0000" + totalBalls.ToString();
 		}
+	}
+
+	private void FindLineAndRemove() { // TODO: Implement
 	}
 }
