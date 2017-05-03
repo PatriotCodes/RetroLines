@@ -19,7 +19,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Game : MonoBehaviour {
+public class Game : MonoBehaviour { 
 
 	public struct Ball {
 		public int x;
@@ -234,6 +234,15 @@ public class Game : MonoBehaviour {
 		return new Tile();
 	}
 
+	private Tile GetXYTile(int x, int y) {
+		for (int i = 0; i < allTiles.Count; i++) {
+			if (allTiles[i].i == x && allTiles[i].j == y) {
+				return allTiles[i];
+			}
+		}
+		return new Tile();
+	}
+
 	private string TotalBallsString() {
 		if (totalBalls >= 10) {
 			return "000" + totalBalls.ToString();
@@ -267,6 +276,8 @@ public class Game : MonoBehaviour {
 					ballsInAddedList.Add (addedBalls [nextIndex]);
 				} else
 					break;
+			} else {
+				break;
 			}
 		}
 		for (int i = currentBall.x - 1; i >= 0; i--) {
@@ -278,16 +289,19 @@ public class Game : MonoBehaviour {
 					ballsInAddedList.Add (addedBalls [nextIndex]);
 				} else
 					break;
+			} else {
+				break;
 			}
 		}
 		if (counter >= 5) {
+			ballsInLine.Add (currentBall.ballObject);
+			ballsInAddedList.Add (currentBall);
 			for (int i = 0; i < ballsInLine.Count; i++) {
-				Destroy(ballsInLine[i].gameObject);
-				Tile tmp = (GetIJTile(ballsInAddedList[i].x,ballsInAddedList[i].x));
-				freeTiles.Add(tmp);
-				addedBalls.Remove(ballsInAddedList[i]);
+				Destroy (ballsInLine [i].gameObject);
+				Tile tmp = (GetXYTile (ballsInAddedList [i].x, ballsInAddedList [i].y));
+				freeTiles.Add (tmp);
+				addedBalls.Remove (ballsInAddedList [i]);
 			}
-			Destroy(currentBall.ballObject.gameObject);
 			totalBalls -= counter;
 			totalBallsText.text = TotalBallsString();
 			return true;
@@ -297,7 +311,7 @@ public class Game : MonoBehaviour {
 
 	private void FindHorizontal() { // TODO: Implement
 	}
-
+		
 	private void FindDiagonal() { // TODO: Implement
 	}
 
