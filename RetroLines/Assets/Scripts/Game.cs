@@ -25,11 +25,13 @@ public class Game : MonoBehaviour {
 		public int x;
 		public int y;
 		public int ballIndex;
+		public RawImage ballObject;
 
-		public Ball(int x, int y, int ballIndex) {
+		public Ball(int x, int y, int ballIndex, RawImage ballObject) {
 			this.x = x;
 			this.y = y;
 			this.ballIndex = ballIndex;
+			this.ballObject = ballObject;
 		}
 	};
 
@@ -56,9 +58,11 @@ public class Game : MonoBehaviour {
 	public RawImage[] balls = new RawImage[7];
 	private bool userMove;
 	private int[] upcomingBalls = new int[3];
+	private RawImage[] upcomingBallsRaw = new RawImage[3];
 	private int ballSize = (Screen.width / 9);
 	private List<Tile> freeTiles = new List<Tile>();
 	private List<Tile> allTiles = new List<Tile>();
+	private Ball currBall;
 	private Tile moveTile = new Tile();  // tile to which we move our ball during the turn
 	private Tile[] upcomingTiles = new Tile[3];
 	private RawImage[] upcomingObjects = new RawImage[3];
@@ -108,12 +112,13 @@ public class Game : MonoBehaviour {
 							if (coroutine != null) {
 								StopCoroutine (coroutine);
 								coroutine = null;
-								MoveBall (tileTransform);
 								// TODO: FindPath
-								AddBalls ();
-								SetUpcomingBalls ();
-								AddUpcomingBalls ();
-								FindLineAndRemove ();
+								MoveBall (tileTransform);
+								if (!FindLineAndRemove(currBall)) {  // TODO: Check situation when line was formed after balls were added
+									AddBalls();
+									SetUpcomingBalls();
+									AddUpcomingBalls();
+								}
 							}
 						}
 					}
@@ -126,7 +131,11 @@ public class Game : MonoBehaviour {
 		for (int i = 0; i < 3; i++) {
 			int randInt = Random.Range(0, 6);
 			upcomingBalls[i] = randInt;
-			RawImage ball = Instantiate(balls[randInt], canvas.transform) as RawImage; // TODO: Remove previous balls
+			if (upcomingBallsRaw[i] != null) {
+				Destroy(upcomingBallsRaw[i].gameObject);
+			}
+			RawImage ball = Instantiate(balls[randInt], canvas.transform) as RawImage;
+			upcomingBallsRaw[i] = ball;
 			ball.rectTransform.anchoredPosition3D = new Vector3(setField.upcomingBallsCoord[i].x, setField.upcomingBallsCoord[i].y, 1);
 			ball.rectTransform.localScale = new Vector3(1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
@@ -146,19 +155,21 @@ public class Game : MonoBehaviour {
 
 	private void AddBalls() {  // adding balls to the field
 		for (int i = 0; i < 3; i++) {
-			RawImage ball = Instantiate (balls [upcomingBalls [i]], canvas.transform) as RawImage;
+			RawImage ball = Instantiate (balls [upcomingBalls [i]], canvas.transform) as RawImage; 
 			if (!upcomingTiles[i].Equals(moveTile)) {
 				ball.rectTransform.anchoredPosition3D = new Vector3 (upcomingTiles [i].x, upcomingTiles [i].y, 1);
+				addedBalls.Add(new Ball(upcomingTiles[i].i,upcomingTiles[i].j,upcomingBalls[i],ball));
 			} else {
 				Tile newTile = GetFreeTile();
 				ball.rectTransform.anchoredPosition3D = new Vector3 (newTile.x, newTile.y, 1);
+				addedBalls.Add(new Ball(newTile.i,newTile.j,upcomingBalls[i],ball));
 			}
 			ball.rectTransform.localScale = new Vector3 (1, 1, 1);
 			ball.rectTransform.sizeDelta = new Vector2 (ballSize, ballSize);
 			ball.tag = ballTag;
 			BoxCollider2D ballCollider = ball.GetComponent (typeof(BoxCollider2D)) as BoxCollider2D;
 			ballCollider.size = new Vector2 (ballSize, ballSize);
-			Destroy (upcomingObjects[i]);
+			Destroy (upcomingObjects[i].gameObject);
 			totalBalls++;
 		}
 		totalBallsText.text = TotalBallsString();
@@ -183,7 +194,7 @@ public class Game : MonoBehaviour {
 		for (int i = 0; i < gridWidth; i++) {
 			for (int j = 0; j < gridHeigth; j++) {
 				freeTiles.Add(new Tile (i, j, setField.gridPos[i,j].x, setField.gridPos[i,j].y));
-				allTiles.Add(new Tile (i, j, setField.gridPos [i, j].x, setField.gridPos [i, j].y));
+				allTiles.Add(new Tile (i, j, setField.gridPos [i,j].x, setField.gridPos [i,j].y));
 			}
 		}
 	}
@@ -204,8 +215,13 @@ public class Game : MonoBehaviour {
 	private void MoveBall(RectTransform finalPosition) {
 		prevBall.anchoredPosition = startupPosition;
 		prevBall.anchoredPosition = finalPosition.anchoredPosition;
-		freeTiles.Add(GetIJTile((int)startupPosition.x, (int)startupPosition.y));
+		Tile startTile = GetIJTile((int)startupPosition.x, (int)startupPosition.y);
+		Ball mBall = addedBalls[GetBallIndexByXY(startTile.i, startTile.j)];
+		addedBalls.Remove(mBall);
+		freeTiles.Add(startTile);
 		moveTile = GetIJTile((int)finalPosition.anchoredPosition.x, (int)finalPosition.anchoredPosition.y);
+		currBall = new Ball (moveTile.i, moveTile.j, mBall.ballIndex, mBall.ballObject);
+		addedBalls.Add(currBall);
 		freeTiles.Remove(moveTile);
 	}
 
@@ -230,6 +246,68 @@ public class Game : MonoBehaviour {
 		}
 	}
 
-	private void FindLineAndRemove() { // TODO: Implement
+	private bool FindLineAndRemove(Ball currentBall) { // TODO: Implement
+		if (FindVertical (currentBall)) {
+			return true;
+		}
+		return false;
 	}
+
+	private bool FindVertical(Ball currentBall) {
+		int counter = 1;
+		int nextIndex;
+		List<RawImage> ballsInLine = new List<RawImage>();
+		List<Ball> ballsInAddedList = new List<Ball>();
+		for (int i = currentBall.x + 1; i <= 9; i++) {
+			nextIndex = GetBallIndexByXY (i, currentBall.y);
+			if (nextIndex != -1) {
+				if (addedBalls [nextIndex].ballIndex == currentBall.ballIndex) {
+					counter++;
+					ballsInLine.Add (addedBalls [nextIndex].ballObject);
+					ballsInAddedList.Add (addedBalls [nextIndex]);
+				} else
+					break;
+			}
+		}
+		for (int i = currentBall.x - 1; i >= 0; i--) {
+			nextIndex = GetBallIndexByXY (i, currentBall.y);
+			if (nextIndex != -1) {
+				if (addedBalls [nextIndex].ballIndex == currentBall.ballIndex) {
+					counter++;
+					ballsInLine.Add (addedBalls [nextIndex].ballObject);
+					ballsInAddedList.Add (addedBalls [nextIndex]);
+				} else
+					break;
+			}
+		}
+		if (counter >= 5) {
+			for (int i = 0; i < ballsInLine.Count; i++) {
+				Destroy(ballsInLine[i].gameObject);
+				Tile tmp = (GetIJTile(ballsInAddedList[i].x,ballsInAddedList[i].x));
+				freeTiles.Add(tmp);
+				addedBalls.Remove(ballsInAddedList[i]);
+			}
+			Destroy(currentBall.ballObject.gameObject);
+			totalBalls -= counter;
+			totalBallsText.text = TotalBallsString();
+			return true;
+		}
+		return false;
+	}
+
+	private void FindHorizontal() { // TODO: Implement
+	}
+
+	private void FindDiagonal() { // TODO: Implement
+	}
+
+	private int GetBallIndexByXY(int x, int y) { // return -1 if no ball with such x,y coords found
+		for (int i = 0; i < addedBalls.Count; i++) {
+			if (addedBalls [i].x == x && addedBalls [i].y == y) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
 }
