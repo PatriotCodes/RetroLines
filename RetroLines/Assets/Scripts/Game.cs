@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class Game : MonoBehaviour { 
 
@@ -56,10 +57,11 @@ public class Game : MonoBehaviour {
 	private bool firstClick;
 	public SetField setField;
 	public RawImage[] balls = new RawImage[7];
+	public GameObject gameOverScreen;
 	private bool userMove;
 	private int[] upcomingBalls = new int[3];
 	private RawImage[] upcomingBallsRaw = new RawImage[3];
-	private int ballSize = (Screen.width / 9);
+	private int ballSize;
 	private List<Tile> freeTiles = new List<Tile>();
 	private List<Tile> allTiles = new List<Tile>();
 	private Ball currBall;
@@ -73,13 +75,18 @@ public class Game : MonoBehaviour {
 	private string ballTag = "Ball";
 	private string tileTag = "Tile";
 	public Text totalBallsText;
+	public Text scoreText;
+	public Text gameOverText;
 	private int totalBalls = 0;
+	private int totalScore = 0;
+	private bool gameIsOver = false;
 
 	void Awake() {
 		InstantiateFreeTiles();
 	}
 
 	void Start() {
+		ballSize = (Screen.width / 9);
 		SetUpcomingBalls();
 		AddUpcomingBalls();
 		AddBalls();
@@ -88,36 +95,38 @@ public class Game : MonoBehaviour {
 	}
 
 	void Update() {
-		if ( Input.GetMouseButtonDown(0)) {
-			Vector2 worldPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			RaycastHit2D[] hit = Physics2D.RaycastAll(worldPoint, Vector2.zero);
-			if ( hit.Length > 1 ) {  // we hit ball
-				if (hit[1].collider.tag == ballTag) {
-					if (coroutine != null) {
-						StopCoroutine (coroutine);
-						prevBall.anchoredPosition = startupPosition;
+		if (!gameIsOver) {
+			if (Input.GetMouseButtonDown (0)) {
+				Vector2 worldPoint = Camera.main.ScreenToWorldPoint (Input.mousePosition);
+				RaycastHit2D[] hit = Physics2D.RaycastAll (worldPoint, Vector2.zero);
+				if (hit.Length > 1) {  // we hit ball
+					if (hit [1].collider.tag == ballTag) {
+						if (coroutine != null) {
+							StopCoroutine (coroutine);
+							prevBall.anchoredPosition = startupPosition;
+						}
+						ballTransform = hit [1].collider.gameObject.transform as RectTransform;
+						prevBall = ballTransform;
+						startupPosition = ballTransform.anchoredPosition;
+						coroutine = BallAnimation (0.35f, ballTransform);
+						StartCoroutine (coroutine);
 					}
-					ballTransform = hit[1].collider.gameObject.transform as RectTransform;
-					prevBall = ballTransform;
-					startupPosition = ballTransform.anchoredPosition;
-					coroutine = BallAnimation (0.35f, ballTransform);
-					StartCoroutine (coroutine);
 				}
-			}
-			if (hit.Length == 1) {  // we hit field tile
-				if (hit[0].collider.tag == tileTag) {
-					if (prevBall != null) {
-						RectTransform tileTransform = hit [0].collider.gameObject.transform as RectTransform;
-						if (IsTileFree(tileTransform)) {
-							if (coroutine != null) {
-								StopCoroutine (coroutine);
-								coroutine = null;
-								// TODO: FindPath
-								MoveBall (tileTransform);
-								if (!FindLineAndRemove(currBall)) {  // TODO: Check situation when line was formed after balls were added
-									AddBalls();
-									SetUpcomingBalls();
-									AddUpcomingBalls();
+				if (hit.Length == 1) {  // we hit field tile
+					if (hit [0].collider.tag == tileTag) {
+						if (prevBall != null) {
+							RectTransform tileTransform = hit [0].collider.gameObject.transform as RectTransform;
+							if (IsTileFree (tileTransform)) {
+								if (coroutine != null) {
+									StopCoroutine (coroutine);
+									coroutine = null;
+									// TODO: FindPath
+									MoveBall (tileTransform);
+									if (!FindLineAndRemove (currBall)) {  // TODO: Check situation when line was formed after balls were added //Do FindLineAndRemove() for each added ball
+										AddBalls ();
+										SetUpcomingBalls ();
+										AddUpcomingBalls ();
+									}
 								}
 							}
 						}
@@ -144,12 +153,14 @@ public class Game : MonoBehaviour {
 
 	private void AddUpcomingBalls() {  // adding small presentations of upcoming balls
 		GetUpcomingCoord();
-		for (int i = 0; i < 3; i++) {
-			RawImage ball = Instantiate(balls[upcomingBalls[i]], canvas.transform) as RawImage;
-			ball.rectTransform.anchoredPosition3D = new Vector3(upcomingTiles[i].x, upcomingTiles[i].y, 1);
-			ball.rectTransform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
-			ball.rectTransform.sizeDelta = new Vector2(ballSize, ballSize);
-			upcomingObjects[i] = ball;
+		if (!gameIsOver) {
+			for (int i = 0; i < 3; i++) {
+				RawImage ball = Instantiate (balls [upcomingBalls [i]], canvas.transform) as RawImage;
+				ball.rectTransform.anchoredPosition3D = new Vector3 (upcomingTiles [i].x, upcomingTiles [i].y, 1);
+				ball.rectTransform.localScale = new Vector3 (0.4f, 0.4f, 0.4f);
+				ball.rectTransform.sizeDelta = new Vector2 (ballSize, ballSize);
+				upcomingObjects [i] = ball;
+			}
 		}
 	}
 
@@ -172,14 +183,18 @@ public class Game : MonoBehaviour {
 			Destroy (upcomingObjects[i].gameObject);
 			totalBalls++;
 		}
-		totalBallsText.text = TotalBallsString();
+		totalBallsText.text = BallsString(totalBalls);
 	}
 
 	private void GetUpcomingCoord() {  // getting coordinates to which balls will be added
-		for (int i = 0; i < 3; i++) {
-			int randIndex = Random.Range (0, freeTiles.Count);
-			upcomingTiles[i] = freeTiles[randIndex];
-			freeTiles.RemoveAt(randIndex);
+		if (freeTiles.Count > 3) {
+			for (int i = 0; i < 3; i++) {
+				int randIndex = Random.Range (0, freeTiles.Count);
+				upcomingTiles [i] = freeTiles [randIndex];
+				freeTiles.RemoveAt (randIndex);
+			}
+		} else {
+			GameOver();
 		}
 	}
 
@@ -243,20 +258,23 @@ public class Game : MonoBehaviour {
 		return new Tile();
 	}
 
-	private string TotalBallsString() {
-		if (totalBalls >= 10) {
-			return "000" + totalBalls.ToString();
-		} else if (totalBalls >= 100) {
-			return "00" + totalBalls.ToString();
-		} else if (totalBalls >= 1000) {
-			return "0" + totalBalls.ToString();
+	private string BallsString(int number) {
+		if (number >= 10) {
+			return "000" + number.ToString();
+		} else if (number >= 100) {
+			return "00" + number.ToString();
+		} else if (number >= 1000) {
+			return "0" + number.ToString();
 		} else {
-			return "0000" + totalBalls.ToString();
+			return "0000" + number.ToString();
 		}
 	}
 
 	private bool FindLineAndRemove(Ball currentBall) { // TODO: Implement
 		if (FindVertical (currentBall)) {
+			return true;
+		}
+		if (FindHorizontal (currentBall)) {
 			return true;
 		}
 		return false;
@@ -303,15 +321,64 @@ public class Game : MonoBehaviour {
 				addedBalls.Remove (ballsInAddedList [i]);
 			}
 			totalBalls -= counter;
-			totalBallsText.text = TotalBallsString();
+			totalScore += counter;
+			totalBallsText.text = BallsString(totalBalls);
+			scoreText.text = BallsString(totalScore);
 			return true;
 		}
 		return false;
 	}
 
-	private void FindHorizontal() { // TODO: Implement
+	private bool FindHorizontal(Ball currentBall) {
+		int counter = 1;
+		int nextIndex;
+		List<RawImage> ballsInLine = new List<RawImage>();
+		List<Ball> ballsInAddedList = new List<Ball>();
+		for (int i = currentBall.y + 1; i <= 9; i++) {
+			nextIndex = GetBallIndexByXY (currentBall.x, i);
+			if (nextIndex != -1) {
+				if (addedBalls [nextIndex].ballIndex == currentBall.ballIndex) {
+					counter++;
+					ballsInLine.Add (addedBalls [nextIndex].ballObject);
+					ballsInAddedList.Add (addedBalls [nextIndex]);
+				} else
+					break;
+			} else {
+				break;
+			}
+		}
+		for (int i = currentBall.y - 1; i >= 0; i--) {
+			nextIndex = GetBallIndexByXY (currentBall.x, i);
+			if (nextIndex != -1) {
+				if (addedBalls [nextIndex].ballIndex == currentBall.ballIndex) {
+					counter++;
+					ballsInLine.Add (addedBalls [nextIndex].ballObject);
+					ballsInAddedList.Add (addedBalls [nextIndex]);
+				} else
+					break;
+			} else {
+				break;
+			}
+		}
+		if (counter >= 5) {
+			ballsInLine.Add (currentBall.ballObject);
+			ballsInAddedList.Add (currentBall);
+			for (int i = 0; i < ballsInLine.Count; i++) {
+				Destroy (ballsInLine [i].gameObject);
+				Tile tmp = (GetXYTile (ballsInAddedList [i].x, ballsInAddedList [i].y));
+				freeTiles.Add (tmp);
+				addedBalls.Remove (ballsInAddedList [i]);
+			}
+			totalBalls -= counter;
+			totalScore += counter;
+			totalBallsText.text = BallsString(totalBalls);
+			scoreText.text = BallsString(totalScore);
+			return true;
+		}
+		return false;
 	}
-		
+
+		
 	private void FindDiagonal() { // TODO: Implement
 	}
 
@@ -324,4 +391,14 @@ public class Game : MonoBehaviour {
 		return -1;
 	}
 
+	private void GameOver() { // TODO: Implement
+		gameIsOver = true;
+		gameOverText.text = "Your Score: " + BallsString(totalScore);
+		gameOverScreen.transform.SetParent(canvas);
+		gameOverScreen.SetActive(true);
+	}
+
+	public void Restart() {
+		SceneManager.LoadScene ("GameStage", LoadSceneMode.Single);
+	}
 }
