@@ -116,7 +116,13 @@ public class Game : MonoBehaviour {
 					if (hit [0].collider.tag == tileTag) {
 						if (prevBall != null) {
 							RectTransform tileTransform = hit [0].collider.gameObject.transform as RectTransform;
-							if (IsTileFree (tileTransform)) {
+							Tile startTile = GetIJTile((int)startupPosition.x,(int)startupPosition.y);
+							Tile endTile = GetIJTile((int)tileTransform.anchoredPosition.x,(int)tileTransform.anchoredPosition.y);
+							Point startP = new Point(startTile.i,startTile.j);
+							Point endP = new Point(endTile.i,endTile.j); 
+							SearchParameters parameters = new SearchParameters(startP,endP,buildBooleanMap());
+							PathFinder path = new PathFinder (parameters);
+							if (path.FindPath().Count != 0) {
 								if (coroutine != null) {
 									StopCoroutine (coroutine);
 									coroutine = null;
@@ -401,4 +407,18 @@ public class Game : MonoBehaviour {
 	public void Restart() {
 		SceneManager.LoadScene ("GameStage", LoadSceneMode.Single);
 	}
+
+	private bool[,] buildBooleanMap() {
+		bool[,] map = new bool[gridWidth, gridHeigth];
+		for (int i = 0; i < gridWidth; i++) {   // we initialise all tiles as "walkable"
+			for (int j = 0; j < gridHeigth; j++) {
+				map [i, j] = true;
+			}
+		}
+		foreach (Ball ball in addedBalls) {
+			map [ball.x, ball.y] = false;
+		}
+		return map;
+	}
+
 }
