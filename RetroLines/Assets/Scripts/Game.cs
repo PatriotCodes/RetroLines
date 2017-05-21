@@ -421,4 +421,7 @@ public class Game : MonoBehaviour {
 		return map;
 	}
 
+	public void QuitGame() {
+		Application.Quit();
+	}
 }

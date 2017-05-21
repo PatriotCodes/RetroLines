@@ -25,6 +25,7 @@ public class UIScaler : MonoBehaviour {
 	public Text BallsText;
 	public Text GameOverScoreText;
 	public Button RepeatButton;
+	public Button QuitButton;
 
 	private const int minScreenWidth = 240;
 	private int offsetYDivider = 90;
@@ -43,12 +44,14 @@ public class UIScaler : MonoBehaviour {
 		BallsText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
 		GameOverScoreText.rectTransform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
 		RepeatButton.transform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
+		QuitButton.transform.localScale = new Vector2(scaleMultiplier, scaleMultiplier);
 	}
 
 	private void SetOffset() {
 		ScoreText.rectTransform.anchoredPosition = new Vector2((Screen.height / offsetXDivider), -(Screen.height / offsetYDivider));
 		BallsText.rectTransform.anchoredPosition = new Vector2(-(Screen.height / offsetXDivider) - (BallsText.rectTransform.sizeDelta.x * BallsText.rectTransform.localScale.x), -(Screen.height / offsetYDivider));
 		GameOverScoreText.rectTransform.anchoredPosition = new Vector2(((-GameOverScoreText.rectTransform.sizeDelta.x * 2) + (GameOverScoreText.rectTransform.sizeDelta.x / 6)),(0));
-		RepeatButton.transform.localPosition = new Vector2(RepeatButton.GetComponent<RectTransform>().sizeDelta.x - 5, -RepeatButton.GetComponent<RectTransform>().sizeDelta.y * 3); // check x variable
+		RepeatButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(RepeatButton.GetComponent<RectTransform>().sizeDelta.x / 4, -RepeatButton.GetComponent<RectTransform>().sizeDelta.y * 3); // check x variable
+		QuitButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(20, 0);
 	}
 }
